@@ -6,23 +6,7 @@ import { copyFolderContent } from "./utils/copy-folder-content.js"
 import { readFile } from "./utils/read-file.js"
 import { cmd, git } from "./actions/index.js"
 import { sleep } from "./utils/sleep.js"
-
-/**
- * @typedef Config
- * @type {object}
- * @property {string} predeploy_command
- * @property {string} directory
- * @property {import("./actions/git.js").GIT} [git]
- */
-
-/**
- *
- * @param {string} path
- * @returns {Promise<Config>}
- */
-const getConfig = async (path) => {
-	return JSON.parse(await readFile(path))
-}
+import { getConfig } from "./config/get-config.js"
 
 export const main = async (tempFolder) => {
 	const configFile = findFile(".deploy.json", process.cwd())
@@ -38,18 +22,25 @@ export const main = async (tempFolder) => {
 		NPM_RUN: `pnpm --prefix ${projectFolder} run`,
 	}
 	const predeploy = () => cmd(format(predeploy_command, ENV))
-	let configure = () => new Promise((r) => r)
-	let publish = () => new Promise((r) => r)
-	let deployPath
 
-	if (config.git) {
-		const _git = git(config.git, tempFolder)
-		const commitName = () => format(config.git.commit_format, ENV)
-		configure = _git.configure
-		publish = () => _git.publish(commitName())
-		deployPath = _git.path
+	const publishes = []
+	const deployPaths = []
+
+	/** @type {Array<() => Promise>} */
+	const configures = []
+
+	if ("git" in config) {
+		config.git.forEach((config) => {
+			const commitName = () => format(config.commit_format, ENV)
+			const { configure, path, publish } = git(config, tempFolder)
+			configures.push(configure)
+			publishes.push(() => publish(commitName()))
+			deployPaths.push(path)
+		})
 	}
-	await Promise.all([configure(), predeploy(), sleep(1000)])
-	await copyFolderContent(directory, deployPath)
-	await publish()
+	await Promise.all([...configures.map((c) => c()), predeploy(), sleep(1000)])
+	await Promise.all(
+		deployPaths.map((path) => copyFolderContent(directory, path))
+	)
+	await Promise.all(publishes)
 }

@@ -22,7 +22,6 @@ const clone = async (repo, folder) => {
 
 /**
  * @param {Pick<GIT, "repo" | "branch">} config
- * @param {string} folder
  */
 export const configure = async ({ repo, branch }, folder) => {
 	if (fs.existsSync(folder) === false) await clone(repo, folder)
@@ -34,11 +33,9 @@ export const configure = async ({ repo, branch }, folder) => {
 	process.chdir(folder)
 	await cmd(`git branch ${branch}`)
 	process.chdir(cwd)
-	return folder
 }
 /**
  * @param {string} commitName
- * @param {string} folder
  */
 export const publish = async (commitName, folder) => {
 	const cwd = process.cwd()
@@ -54,15 +51,9 @@ export const publish = async (commitName, folder) => {
 export const git = (config, parent) => {
 	const folder = join(parent, repoName(config.repo))
 
-	/**
-	 *
-	 * @param {string} commitName
-	 * @returns
-	 */
-	const _publish = (commitName) => publish(commitName, folder)
 	return {
 		configure: () => configure(config, folder),
-		publish: _publish,
+		publish: (commitName) => publish(commitName, folder),
 		path: folder,
 	}
 }
