@@ -1,10 +1,9 @@
 #!/usr/bin/env node C:\work\deploy\index.js
+import { join } from "node:path"
 import { main } from "./src/main.js"
 import { ensureFolderExists } from "./src/utils/ensure-folder-exists.js"
-import { fileURLToPath } from "node:url"
-import path from "node:path"
+import { getDirname } from "./src/utils/get-dirname.js"
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-const TEMP_FOLDER = ensureFolderExists(path.join(__dirname, "temp"))
+const __dirname = getDirname(import.meta.url)
+const TEMP_FOLDER = ensureFolderExists(join(__dirname, "temp"))
 main(TEMP_FOLDER)
