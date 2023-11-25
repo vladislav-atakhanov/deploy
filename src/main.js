@@ -51,5 +51,5 @@ export const main = async (tempFolder) => {
 	}
 	await Promise.all([configure(), predeploy(), sleep(1000)])
 	await copyFolderContent(directory, deployPath)
-	// await publish()
+	await publish()
 }
