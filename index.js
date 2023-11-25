@@ -1,4 +1,4 @@
-#!/usr/bin/env node C:\work\deploy\index.js
+#!/usr/bin/env node
 import { join } from "node:path"
 import { main } from "./src/main.js"
 import { ensureFolderExists } from "./src/utils/ensure-folder-exists.js"

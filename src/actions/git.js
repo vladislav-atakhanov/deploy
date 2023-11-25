@@ -2,6 +2,7 @@ import { cmd } from "./cmd.js"
 import { join } from "node:path"
 import fs from "node:fs"
 import fsPromises from "node:fs/promises"
+import { copyFolderContent } from "../utils/copy-folder-content.js"
 
 const repoName = (repo) =>
 	repo
@@ -44,17 +45,32 @@ export const publish = async (commitName, folder) => {
 	await cmd(`git commit -m "${commitName}"`)
 	process.chdir(cwd)
 }
+
+const clearFolder = async (folder, { blacklist = [] }) => {
+	const names = await fsPromises.readdir(folder, { recursive: false })
+	await Promise.all(
+		names.map((name) => {
+			if (blacklist.includes(name)) return
+			const path = join(folder, name)
+			return fsPromises.rm(path, { recursive: true, force: true })
+		})
+	)
+}
+
 /**
  * @param {GIT} config
- * @param {string} parent
+ * @param {{parent: string, format: (string) => string}} params
  */
-export const git = (config, parent) => {
+export const git = (config, { parent, format }) => {
 	const folder = join(parent, repoName(config.repo))
 
 	return {
 		configure: () => configure(config, folder),
-		publish: (commitName) => publish(commitName, folder),
-		path: folder,
+		publish: (directory) => publish(format(config.commit_format), folder),
+		prepublish: async (directory) => {
+			await clearFolder(folder, { blacklist: [".git"] })
+			await copyFolderContent(directory, folder)
+		},
 	}
 }
 
