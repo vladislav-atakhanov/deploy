@@ -1,11 +1,16 @@
-import { cmd } from "./cmd.js"
+import { cmd } from "../utils/cmd.js"
 import { join } from "node:path"
 import fs from "node:fs"
 import fsPromises from "node:fs/promises"
 import { copyFolderContent } from "../utils/copy-folder-content.js"
 import { clearFolder } from "../utils/clear-folder.js"
 
-/** @param {string} repo */
+/**
+ * @typedef GIT
+ * @type {import("../config/config.js").GIT}
+ */
+
+/** @param {GIT["repo"]} repo */
 const repoName = (repo) =>
 	repo
 		.split("/")
@@ -14,7 +19,7 @@ const repoName = (repo) =>
 
 /**
  *
- * @param {string} repo
+ * @param {GIT["repo"]} repo
  * @param {string} folder
  * @returns
  */
@@ -53,6 +58,7 @@ export const publish = async (commitName, folder) => {
 /**
  * @param {GIT} config
  * @param {{parent: string, format: (x: string) => string}} params
+ * @returns {import("./action.js").Action}
  */
 export const git = (config, { parent, format }) => {
 	const folder = join(parent, repoName(config.repo))
@@ -66,11 +72,3 @@ export const git = (config, { parent, format }) => {
 		},
 	}
 }
-
-/**
- * @typedef GIT
- * @type {object}
- * @property {string} branch
- * @property {string} commit_format
- * @property {string} repo
- */

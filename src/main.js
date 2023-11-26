@@ -2,7 +2,13 @@ import { join } from "node:path"
 import { findFile } from "./utils/find-file.js"
 import { date, time } from "./utils/datetime.js"
 import { formatString } from "./utils/format-string.js"
-import { cmd, configure, git, prepublish, publish } from "./actions/index.js"
+import {
+	cmd,
+	configure,
+	prepublish,
+	publish,
+	allActions,
+} from "./actions/index.js"
 import { sleep } from "./utils/sleep.js"
 import { getConfig } from "./config/get-config.js"
 import { ArgumentParser } from "./arguments-parser/index.js"
@@ -47,18 +53,18 @@ export const main = async (tempFolder, argv) => {
 	/** @type {import("./actions/index.js").Action[]} */
 	const actions = []
 
-	const actionsTypes = { git }
-
-	for (const type in actionsTypes) {
+	for (const type in allActions) {
 		if (type in config === false) continue
-		actions.push(
-			actionsTypes[type](config, {
-				format,
-				parent: tempFolder,
-			})
+		actions.push.apply(
+			actions,
+			config[type].flatMap((c) =>
+				allActions[type](c, {
+					format,
+					parent: tempFolder,
+				})
+			)
 		)
 	}
-
 	console.log("Build...")
 	await Promise.all([configure(actions), predeploy(), sleep(1000)])
 

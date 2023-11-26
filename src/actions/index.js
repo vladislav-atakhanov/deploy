@@ -1,11 +1,10 @@
-export { cmd } from "./cmd.js"
-export { git } from "./git.js"
+export { cmd } from "../utils/cmd.js"
+import { git } from "./git.js"
+import { ssh } from "./ssh.js"
+
 /**
  * @typedef Action
- * @type {object}
- * @property {(directory: string) => Promise<void>} prepublish
- * @property {(directory: string) => Promise<void>} publish
- * @property {() => Promise<void>} configure
+ * @type {import("./action.ts").Action}
  */
 
 /**
@@ -25,3 +24,5 @@ export const configure = (actions) =>
  */
 export const prepublish = async (actions, directory) =>
 	Promise.all(actions.map(({ prepublish }) => prepublish(directory)))
+
+export const allActions = { git, ssh }
