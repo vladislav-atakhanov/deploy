@@ -18,7 +18,7 @@ const parseConfig = async () => {
 const createParser = () => {
 	const parser = new ArgumentParser("Deploy")
 	parser.add("noPublish", Boolean, ["--no-publish", "-n"], "Don't publish")
-	parser.add("help", Boolean, ["--help", "-h", "/?"], "Show this message")
+	parser.add("isHelp", Boolean, ["--help", "-h", "/?"], "Show this message")
 	return parser
 }
 
@@ -28,8 +28,8 @@ const createParser = () => {
  */
 export const main = async (tempFolder, argv) => {
 	const parser = createParser()
-	const { help, ...args } = parser.parse(argv)
-	if (help) return parser.help(args)
+	const { isHelp, ...args } = parser.parse(argv)
+	if (isHelp) return parser.help(args)
 	const { noPublish } = args
 	const { config, projectFolder, directory } = await parseConfig()
 	const { predeploy_command } = config

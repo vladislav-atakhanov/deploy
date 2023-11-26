@@ -1,7 +1,5 @@
 import { addIndent } from "./add-indent.js"
-import { getLongestStringLength } from "./get-longest-string-length.js"
-import { whiteSpace } from "./whitespace.js"
-import { wordwrap } from "./wordwrap.js"
+import { showTable } from "./table.js"
 /**
  *
  * @param {string[]} argv
@@ -15,36 +13,8 @@ const parseBoolean = (argv, args) => {
 	return -1
 }
 
-/**
- *
- * @param {string[]} colums
- * @param {number[]} sizes
- */
-const merge = (colums, sizes) => {
-	const lines = colums.map((column, index) =>
-		wordwrap(column, sizes[index]).map((line) =>
-			whiteSpace(line.trim(), sizes[index])
-		)
-	)
-	const largestLineLength = lines.reduce(
-		(largest, line) => Math.max(line.length, largest),
-		0
-	)
-	lines.forEach((line) => {
-		while (line.length < largestLineLength) {
-			line.push(whiteSpace(line[0].length))
-		}
-	})
-
-	const result = []
-	for (let index = 0; index < largestLineLength; index++)
-		result.push(lines.reduce((result, line) => result + line[index], ""))
-
-	return result.join("\n")
-}
-
 const VALUES = new Map()
-VALUES.set(String, "string")
+VALUES.set(String, "str")
 VALUES.set(Number, "int")
 
 /** @param {Pick<Argument, "args" | "type">} arg */
@@ -55,33 +25,11 @@ const argsHelp = ({ args, type }) =>
 		return `${arg} ${name.toUpperCase()}`
 	})
 
-/**
- * @param {Argument} arg
- * @param {number} firstColumnSize
- */
-const getArgumentMessage = (
-	{ args, description, type },
-	firstColumnSize,
-	{ descriptionLength, gap }
-) => {
-	const argsHelps = argsHelp({ args, type })
-	return merge(
-		[argsHelps.join(", "), "", description || ""],
-		[firstColumnSize, gap, descriptionLength]
-	)
+/** @param {Argument} arg */
+const getArgumentTable = ({ args, description, type }) => {
+	return [argsHelp({ args, type }).join(", "), description]
 }
 
-/** @param {Argument[]} argNames */
-const getArgumentsMessage = (
-	argNames,
-	{ descriptionLength = 40, gap = 4 } = {}
-) => {
-	const firstColumnSize =
-		getLongestStringLength(argNames.flatMap(argsHelp)) + 5
-	return argNames.map((arg) =>
-		getArgumentMessage(arg, firstColumnSize, { descriptionLength, gap })
-	)
-}
 /**
  *
  * @param {string[]} argv
@@ -118,19 +66,17 @@ export class ArgumentParser {
 
 	getHelpMessage(args) {
 		const keys = Array.from(Object.keys(args)).filter((key) => args[key])
-		const isFull = keys.length > 0
+		const isFull = keys.length <= 0
 		const needArguments = isFull
-			? this.arguments.filter(({ key }) => keys.includes(key))
-			: this.arguments
+			? this.arguments
+			: this.arguments.filter(({ key }) => keys.includes(key))
 
 		if (needArguments.length < 1) return "Unknown argument"
-		let helpMessage = args ? "" : `${this.title}\nArguments:\n`
+		let helpMessage = isFull ? `${this.title}\nArguments:\n` : ""
+		let indent = isFull ? 4 : 0
 
-		const indent = isFull ? 0 : 4
-		helpMessage += addIndent(
-			getArgumentsMessage(needArguments).join("\n"),
-			indent
-		)
+		const argumentsMessage = showTable(needArguments.map(getArgumentTable))
+		helpMessage += addIndent(argumentsMessage, indent)
 		return helpMessage
 	}
 
