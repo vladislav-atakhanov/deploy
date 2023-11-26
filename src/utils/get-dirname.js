@@ -1,7 +1,9 @@
-import { fileURLToPath } from "node:url"
 import path from "node:path"
+import { getFilename } from "./get-filename.js"
 
-export const getDirname = (url) => {
-	const __filename = fileURLToPath(url)
-	return path.dirname(__filename)
-}
+/**
+ *
+ * @param {string} url
+ * @returns {string}
+ */
+export const getDirname = (url) => path.dirname(getFilename(url))
