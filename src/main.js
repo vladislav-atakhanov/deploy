@@ -5,6 +5,7 @@ import { formatString } from "./utils/format-string.js"
 import { cmd, configure, git, prepublish, publish } from "./actions/index.js"
 import { sleep } from "./utils/sleep.js"
 import { getConfig } from "./config/get-config.js"
+import { ArgumentParser } from "./arguments-parser/index.js"
 
 const parseConfig = async () => {
 	const configFile = findFile(".deploy.json", process.cwd())
@@ -14,8 +15,22 @@ const parseConfig = async () => {
 	return { config, directory, projectFolder }
 }
 
-/** @param {string} tempFolder */
-export const main = async (tempFolder) => {
+const createParser = () => {
+	const parser = new ArgumentParser("Deploy")
+	parser.add("noPublish", Boolean, ["--no-publish", "-n"], "Don't publish")
+	parser.add("help", Boolean, ["--help", "-h", "/?"], "Show this message")
+	return parser
+}
+
+/**
+ * @param {string} tempFolder
+ * @param {string[]} argv
+ */
+export const main = async (tempFolder, argv) => {
+	const parser = createParser()
+	const { help, ...args } = parser.parse(argv)
+	if (help) return parser.help(args)
+	const { noPublish } = args
 	const { config, projectFolder, directory } = await parseConfig()
 	const { predeploy_command } = config
 
@@ -49,6 +64,8 @@ export const main = async (tempFolder) => {
 
 	console.log("Copy...")
 	await prepublish(actions, directory)
+
+	if (noPublish) return
 	console.log("Publish...")
 	await publish(actions, directory)
 }

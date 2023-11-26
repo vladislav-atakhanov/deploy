@@ -6,4 +6,4 @@ import { getDirname } from "./src/utils/get-dirname.js"
 
 const __dirname = getDirname(import.meta.url)
 const TEMP_FOLDER = ensureFolderExists(join(__dirname, "temp"))
-main(TEMP_FOLDER)
+main(TEMP_FOLDER, process.argv)
