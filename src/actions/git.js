@@ -21,12 +21,8 @@ const repoName = (repo) =>
  *
  * @param {GIT["repo"]} repo
  * @param {string} folder
- * @returns
  */
-const clone = async (repo, folder) => {
-	console.log("clone")
-	await cmd(`git clone ${repo} ${folder}`)
-}
+const clone = (repo, folder) => cmd(`git clone ${repo} ${folder}`)
 
 /**
  * @param {Pick<GIT, "repo" | "branch">} config
