@@ -13,6 +13,7 @@ import { sleep } from "./utils/sleep.js"
 import { getConfig } from "./config/get-config.js"
 import { ArgumentParser } from "./arguments-parser/index.js"
 import { runInDirectory } from "./utils/run-in-directory.js"
+import { loadDotenv } from "./utils/load-dotenv.js"
 
 const parseConfig = async () => {
 	const configFile = findFile(".deploy.json", process.cwd())
@@ -42,6 +43,8 @@ export const main = async (tempFolder, argv) => {
 	const { predeploy_command } = config
 
 	const ENV = {
+		...process.env,
+		...(await loadDotenv(join(projectFolder, ".env"))),
 		DATE: date(),
 		TIME: time(),
 	}
