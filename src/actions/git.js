@@ -4,11 +4,7 @@ import fs from "node:fs"
 import fsPromises from "node:fs/promises"
 import { copyFolderContent } from "../utils/copy-folder-content.js"
 import { clearFolder } from "../utils/clear-folder.js"
-
-/**
- * @typedef GIT
- * @type {import("../config/config.js").GIT}
- */
+import { runInDirectory } from "../utils/run-in-directory.js"
 
 /** @param {GIT["repo"]} repo */
 const repoName = (repo) =>
@@ -17,54 +13,63 @@ const repoName = (repo) =>
 		.at(-1)
 		.replace(/\.git$/, "")
 
-/**
- *
- * @param {GIT["repo"]} repo
- * @param {string} folder
- */
-const clone = (repo, folder) => cmd(`git clone ${repo} ${folder}`)
+/** @param {Pick<GIT, "repo" | "folder">} git */
+const clone = ({ repo, folder }) => cmd(`git clone ${repo} ${folder}`)
 
-/**
- * @param {Pick<GIT, "repo" | "branch">} config
- */
-export const configure = async ({ repo, branch }, folder) => {
-	if (fs.existsSync(folder) === false) await clone(repo, folder)
+/** @param {Pick<GIT, "repo" | "folder">} config */
+export const configure = async ({ repo, folder }) => {
+	if (fs.existsSync(folder) === false) await clone({ repo, folder })
 	else if (fs.existsSync(join(folder, ".git")) === false) {
 		await fsPromises.rm(folder, { recursive: true, force: true })
-		await clone(repo, folder)
+		await clone({ repo, folder })
 	}
-	const cwd = process.cwd()
-	process.chdir(folder)
-	await cmd(`git branch ${branch}`)
-	process.chdir(cwd)
 }
+
 /**
  * @param {string} commitName
  * @param {string} folder
  */
-export const publish = async (commitName, folder) => {
-	const cwd = process.cwd()
-	process.chdir(folder)
-	await cmd("git add .")
-	await cmd(`git commit -m "${commitName}"`)
-	await cmd("git push")
-	process.chdir(cwd)
-}
+export const publish = (commitName, folder) =>
+	runInDirectory(folder, async () => {
+		await cmd("git add .")
+		await cmd(`git commit -m "${commitName}"`)
+		await cmd("git push")
+	})
 
 /**
- * @param {GIT} config
+ * @param {GIT[]} gits
  * @param {{parent: string, format: (x: string) => string}} params
  * @returns {import("./action.js").Action}
  */
-export const git = (config, { parent, format }) => {
-	const folder = join(parent, repoName(config.repo))
-
+export const git = (gits, { parent, format }) => {
+	gits = gits.map(({ repo, branch, commit_format }) => ({
+		folder: join(parent, repoName(repo)),
+		branch: format(branch),
+		repo: format(repo),
+		commit_format,
+	}))
 	return {
-		configure: () => configure(config, folder),
-		publish: (directory) => publish(format(config.commit_format), folder),
-		prepublish: async (directory) => {
-			await clearFolder(folder, { blacklist: [".git"] })
-			await copyFolderContent(directory, folder)
+		configure: () => Promise.all(gits.map(configure)),
+		async publish() {
+			for (const { repo, commit_format } of gits) {
+				const folder = join(parent, repoName(repo))
+				await publish(format(commit_format), folder)
+			}
+		},
+		async prepublish(directory) {
+			await Promise.all(
+				gits.map(async ({ folder }) => {
+					await clearFolder(folder, { blacklist: [".git"] })
+					await copyFolderContent(directory, folder)
+				})
+			)
+			for (const { folder, branch } of gits)
+				await runInDirectory(folder, () => cmd(`git branch ${branch}`))
 		},
 	}
 }
+
+/**
+ * @typedef GIT
+ * @type {import("../config/config.js").GIT}
+ */

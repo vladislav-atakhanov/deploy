@@ -12,6 +12,7 @@ import {
 import { sleep } from "./utils/sleep.js"
 import { getConfig } from "./config/get-config.js"
 import { ArgumentParser } from "./arguments-parser/index.js"
+import { runInDirectory } from "./utils/run-in-directory.js"
 
 const parseConfig = async () => {
 	const configFile = findFile(".deploy.json", process.cwd())
@@ -43,28 +44,20 @@ export const main = async (tempFolder, argv) => {
 	const ENV = {
 		DATE: date(),
 		TIME: time(),
-		NPM_RUN: `pnpm --prefix ${projectFolder} run`,
 	}
-	const predeploy = () => cmd(formatString(predeploy_command, ENV))
 
 	/** @param {string} string */
 	const format = (string) => formatString(string, ENV)
+	const predeploy = () =>
+		runInDirectory(projectFolder, () => cmd(format(predeploy_command)))
+
+	const params = { format, parent: tempFolder }
 
 	/** @type {import("./actions/index.js").Action[]} */
-	const actions = []
+	const actions = Object.entries(allActions)
+		.filter(([key]) => key in config)
+		.map(([key, action]) => action(config[key], params))
 
-	for (const type in allActions) {
-		if (type in config === false) continue
-		actions.push.apply(
-			actions,
-			config[type].flatMap((c) =>
-				allActions[type](c, {
-					format,
-					parent: tempFolder,
-				})
-			)
-		)
-	}
 	console.log("Build...")
 	await Promise.all([configure(actions), predeploy(), sleep(1000)])
 

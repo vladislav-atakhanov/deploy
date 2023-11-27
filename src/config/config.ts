@@ -2,6 +2,7 @@ export interface GIT {
 	branch: string
 	commit_format: string
 	repo: string
+	folder: string
 }
 export interface SSH {
 	server: string
