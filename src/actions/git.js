@@ -43,7 +43,7 @@ export const publish = (commitName, folder) =>
  */
 export const git = (gits, { parent, format }) => {
 	gits = gits.map(({ repo, branch, commit_format }) => ({
-		folder: join(parent, repoName(repo)),
+		folder: join(parent, repoName(format(repo))),
 		branch: format(branch),
 		repo: format(repo),
 		commit_format,
