@@ -1,8 +1,10 @@
-import fsPromises from "fs/promises"
+import { readFile } from "fs/promises"
+import { existsSync } from "fs"
 
 /** @param {string} path */
 export const loadDotenv = async (path) => {
-	const content = await fsPromises.readFile(path, "utf-8")
+	if (existsSync(path) === false) return null
+	const content = await readFile(path, "utf-8")
 	return parse(content)
 }
 
